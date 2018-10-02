@@ -1,2 +1,2 @@
-# RL_exercize
+# RL_exercise
 Exercise for reinforcement learning
