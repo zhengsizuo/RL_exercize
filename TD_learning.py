@@ -1,7 +1,7 @@
 """
 Implementation of flappy birds using pygame module, in this game,
 the goal is to find the female bird on the right top of the screen.
-The algorithms includes  Sarsa, Q-learning，Expected Sarsa.
+The algorithms include  Sarsa, Q-learning，Expected Sarsa.
 Author: zhs
 Date: Nov 12, 2018
 """
@@ -11,21 +11,21 @@ import numpy as np
 import pandas as pd
 from yuangyang_env import Bird, BgSet
 
-# 设置屏幕为20*16=320个状态
-width = 20
-height = 16
+# 设置屏幕为10*10=100个状态
+width = 10
+height = 10
 # 两列障碍物的x坐标
-first_col = 200
-second_col = 600
+first_col = 120
+second_col = 280
 # 绘制四列障碍物所需的参数
-gap_distance = 120
-col_one = 5
-col_two = 7
-col_three = 3
-col_four = 9
+gap_distance = 90
+col_one = 3
+col_two = 4
+col_three = 5
+col_four = 2
 # 设置初始状态，终止状态以及折扣参数、学习率
 initial_state = 0
-goal_state = 19
+goal_state = 9
 gamma = 0.99
 alpha = 0.4  # 使用期望Sarsa算法时可改为1，收敛更快
 
@@ -33,13 +33,13 @@ alpha = 0.4  # 使用期望Sarsa算法时可改为1，收敛更快
 class TDLearning(object):
     """TD-learning类，包含sarsa、Q-learning"""
     def __init__(self):
-        self.states = np.arange(0, 320)  # 定义状态空间，总共20*16=320个状态
+        self.states = np.arange(0, 100)  # 定义状态空间，总共10*10=100个状态
         self.obstacle_states = []
         self.edge_states = {}
         self.actions = ['n', 'w', 's', 'e']
-        self.d_actions = {'n': -20, 'w': -1, 's': 20, 'e': 1}  # 动作空间字典
-        self.q_values = np.zeros((320, 4))
-        self.q2_values = np.zeros((320, 4))
+        self.d_actions = {'n': -10, 'w': -1, 's': 10, 'e': 1}  # 动作空间字典
+        self.q_values = np.zeros([100, 4])  # q(s, a)
+        self.q2_values = np.zeros([100, 4])
         self.policy_episode = []
         self.k = 10000  # 采样的样本数
         self.epsilon = 0.4
@@ -53,21 +53,21 @@ class TDLearning(object):
         """生成边缘状态列表"""
         for i in range(width):
             self.edge_states.setdefault('up', []).append(0+i)
-            self.edge_states.setdefault('bottom', []).append(300+i)
+            self.edge_states.setdefault('bottom', []).append(90+i)
         for j in range(height):
             self.edge_states.setdefault('left', []).append(0+j*width)
-            self.edge_states.setdefault('right', []).append(19+j*width)
+            self.edge_states.setdefault('right', []).append(9+j*width)
 
     def _get_obstacle(self):
         """生成障碍物状态列表"""
         for i in range(col_one):
-            self.obstacle_states.append(5+i*width)
+            self.obstacle_states.append(3+i*width)
         for i in range(col_two):
-            self.obstacle_states.append(185+i*width)
+            self.obstacle_states.append(63+i*width)
         for i in range(col_three):
-            self.obstacle_states.append(15+i*width)
+            self.obstacle_states.append(7+i*width)
         for i in range(col_four):
-            self.obstacle_states.append(155+i*width)
+            self.obstacle_states.append(87+i*width)
 
     def turple2id(self, turple):
         """状态-动作对元组向值函数表坐标的转换"""
@@ -109,7 +109,7 @@ class TDLearning(object):
             if next_state in self.obstacle_states:
                 r = -500  # 撞到障碍物回报为-250
             elif next_state == goal_state:
-                r = 10000  # 找到终止状态回报为1000
+                r = 1000  # 找到终止状态回报为1000
             else:
                 r = -1
         done = False
@@ -117,7 +117,7 @@ class TDLearning(object):
             done = True
         return next_state, r, done
 
-    def policy_act(self, s):
+    def policy_behavior(self, s):
         """行为策略：使用epsilon-greedy策略产生动作"""
         actions = self.actions.copy()
         # q_values = self.q_values.copy()
@@ -136,11 +136,11 @@ class TDLearning(object):
         for i in range(self.k):
             episode = []
             s = initial_state
-            a = self.policy_act(s)
+            a = self.policy_behavior(s)
             while True:
                 episode.append((s, a))
                 s_, r, done = self.step(s, a)
-                a_ = self.policy_act(s_)
+                a_ = self.policy_behavior(s_)
                 x, y = self.turple2id((s, a))
                 next_x, next_y = self.turple2id((s_, a_))
                 if s_ in self.terminal_states:
@@ -152,6 +152,7 @@ class TDLearning(object):
                 a = a_
                 if done:
                     break
+                # 如果又回到之前经历过的状态
                 if (s, a) in episode:
                     break
 
@@ -161,7 +162,7 @@ class TDLearning(object):
             episode = []
             s = initial_state
             while True:
-                a = self.policy_act(s)
+                a = self.policy_behavior(s)
                 if (s, a) in episode:
                     break
                 episode.append((s, a))
@@ -187,7 +188,7 @@ class TDLearning(object):
             episode = []
             s = initial_state
             while True:
-                a = self.policy_act(s)
+                a = self.policy_behavior(s)
                 if (s, a) in episode:
                     break
                 episode.append((s, a))
@@ -209,7 +210,7 @@ class TDLearning(object):
             episode = []
             s = initial_state
             while True:
-                a = self.policy_act(s)
+                a = self.policy_behavior(s)
                 if (s, a) in episode:
                     break
                 s_, r, done = self.step(s, a)
@@ -235,8 +236,8 @@ class TDLearning(object):
     def policy_improvement(self):
         """使用greedy策略改进，用于off-policy TD learning"""
         self.policy_episode = []
-        # q_values = self.q_values.copy()
-        q_values = self.q_values.copy() + self.q2_values.copy()  # double q-learning算法中根据两个Q表值选取动作
+        q_values = self.q_values.copy()
+        # q_values = self.q_values.copy() + self.q2_values.copy()  # double q-learning算法中根据两个Q表值选取动作
         for s_a in q_values:
             a_star = np.argmax(s_a)
             self.policy_episode.append(self.actions[a_star])
@@ -285,6 +286,7 @@ class TDLearning(object):
                 break
             count += 1
             if count % 10 == 0:
+                # epsilon随时间衰减，表示探索减弱
                 self.epsilon = self.epsilon / 2
                 print('Current epsilon is:'+str(self.epsilon))
                 self.print_info()
@@ -301,11 +303,11 @@ class TDLearning(object):
 
 def run_env():
     pygame.init()
-    screen = pygame.display.set_mode((800, 480))
+    screen = pygame.display.set_mode((400, 300))
     pygame.display.set_caption("Find you")
     bird_male = Bird(screen)
     bird_female = Bird(screen)
-    bird_female.rect.topleft = np.array([760, 0])
+    bird_female.rect.topleft = np.array([360, 0])
     bg_set = BgSet(screen)
 
     start = time.time()
