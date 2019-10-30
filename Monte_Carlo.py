@@ -243,20 +243,29 @@ class MonteCarlo(object):
             action_id = np.argmax(s_a)
             self.policy_episode.append(self.actions[action_id])
 
+    def get_probs(self, Q_s, epsilon, nA):
+        """ obtains the action probabilities corresponding to epsilon-greedy policy """
+        policy_s = np.ones(nA) * epsilon / nA
+        a_star = np.argmax(Q_s)
+        policy_s[a_star] = 1 - epsilon + (epsilon / nA)
+        return policy_s
+
     def ep_policy_improvement(self):
         """使用epsilon-greedy策略改进，用于on-policy MC"""
+        nA = len(self.actions)
         self.policy_episode = []
+
         for s_a in self.q_values:
             actions = self.actions.copy()
             a_star = np.argmax(s_a)
-
+            # action = np.random.choice(np.arange(nA), p=self.get_probs(s_a, 0.2, nA))
+            # self.policy_episode.append(self.actions[action])
             if np.random.random() > self.epsilon:
                 # 选取最优动作
                 self.policy_episode.append(self.actions[a_star])
             else:
-                # 从其他动作中选取
-                del actions[a_star]
-                random_action = np.random.permutation(actions)[0]
+                # 从其他动作中(包含最优动作)选取
+                random_action = np.random.choice(np.arange(len(actions)))
                 self.policy_episode.append(random_action)
 
     def find_policy(self, s):
